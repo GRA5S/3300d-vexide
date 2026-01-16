@@ -13,23 +13,6 @@ pub trait BasePneumatic {
 }
 
 
-// pub struct Hood {
-//     port: AdiPneumatic,
-//     port2: AdiPneumatic,
-// }
-// impl PneumaticActuator for Hood {}
-
-// pub struct Wing {
-//     port: AdiPneumatic,
-// }
-// impl PneumaticActuator for Wing {}
-
-// pub struct Matchload {
-//     port: AdiPneumatic,
-// }
-// impl PneumaticActuator for Matchload {}
-
-
 macro_rules! pneumatic_struct {
     ($name:ident, $($field:ident: $type:ty),*) => {
         pub struct $name {
@@ -42,3 +25,28 @@ macro_rules! pneumatic_struct {
 pneumatic_struct!(Hood, port: AdiPneumatic, port2: AdiPneumatic);
 pneumatic_struct!(Wing, port: AdiPneumatic);
 pneumatic_struct!(Matchload, port: AdiPneumatic);
+
+impl Hood {
+    pub fn long(&mut self) {
+        let _ = self.port.set_high();
+        let _ = self.port2.set_high();
+    }
+
+    pub fn mid(&mut self) {
+        let _ = self.port.set_high();
+        let _ = self.port2.set_low();
+    }
+
+    pub fn hoard(&mut self) {
+        let _ = self.port.set_low();
+        let _ = self.port2.set_low();
+    }
+}
+
+
+
+
+
+
+
+
