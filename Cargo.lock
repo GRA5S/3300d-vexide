@@ -567,6 +567,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "vexide-motorgroup"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d8941c7f626a6b9d4e4aa3dac9e7149fad3e725647941ad52146ec8923e1a61"
+dependencies = [
+ "vexide",
+]
+
+[[package]]
 name = "vexide-startup"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -589,6 +598,7 @@ version = "0.1.0"
 dependencies = [
  "evian",
  "vexide",
+ "vexide-motorgroup",
 ]
 
 [[package]]
