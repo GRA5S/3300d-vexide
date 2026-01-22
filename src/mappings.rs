@@ -17,16 +17,11 @@ pub enum DriveMode {
 pub struct ControllerMappings {
     pub drive_mode: DriveMode,
 
-    pub intake: ButtonState,
+    pub hoard: ButtonState,
     pub outake: ButtonState,
-    pub doinker: ButtonState,
-    pub toggle_color_sort: ButtonState,
+    pub mid: ButtonState,
+    pub long: ButtonState,
 
-    pub lady_brown: ButtonState,
-    pub manual_lady_brown: JoystickState,
-
-    pub test_angular: ButtonState,
-    pub test_linear: ButtonState,
-
-    pub clamp: ButtonState,
+    pub wing: ButtonState,
+    pub matchload: ButtonState,
 }

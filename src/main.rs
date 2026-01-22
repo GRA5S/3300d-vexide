@@ -1,5 +1,3 @@
-#![no_main]
-#![no_std]
 
 extern crate alloc;
 
@@ -8,11 +6,15 @@ mod mappings;
 // mod pose;
 // mod subsystems;
 
-use alloc::{rc::Rc, vec::Vec};
-use core::{cell::RefCell, time::Duration};
-use alloc::vec;
-use vexide_motorgroup::*;
-
+use alloc::{
+    rc::Rc,
+    // vec::Vec
+};
+use core::{
+    cell::RefCell,
+    // time::Duration
+};
+// use alloc::vec;
 use vexide::prelude::*;
 // use autonomous::{
 //     command::Command,
@@ -22,20 +24,30 @@ use vexide::prelude::*;
 //         execute_command,
 //     },
 // };
-use evian::{drivetrain::Drivetrain, math::Vec2, motion::Basic, prelude::*};
+use evian::{
+    drivetrain::Drivetrain,
+    math::{Angle, Vec2},
+    tracking::wheeled::{TrackingWheel, WheeledTracking},
+    drivetrain::model::{Arcade, Differential},
+
+    // prelude::*
+};
 use mappings::{ControllerMappings, DriveMode};
 // use subsystems::{
-//     drivetrain::differential_drive,
-//     intake::{Intake, IntakeCommand},
-//     lady_brown::LadyBrown,
+    // drivetrain::differential_drive,
+    // intake::{Intake, IntakeCommand},
+    // lady_brown::LadyBrown,
 // };
+
+
 use vexide::{
-    adi::digital::LogicLevel, prelude::*, startup::banner::themes::THEME_MURICA,
+    adi::digital::LogicLevel,
+    // predlude::*,
 };
 
 
 
-const TRACK_WIDTH: f64 = 10;
+const TRACK_WIDTH: f64 = 10.0;
 const GEARING: f64 = 48.0 / 72.0;
 const WHEEL_DIAMETER: f64 = 3.25;
 
@@ -70,7 +82,6 @@ impl Compete for Robot {
         // };
 
         loop {
-            let delay = Instant::now() + Controller::UPDATE_INTERVAL;
 
             let state = self.controller.state().unwrap_or_default();
 
@@ -90,17 +101,21 @@ impl Compete for Robot {
                 matchload: state.button_down,
             };
 
-            let power = differential_drive(&mappings.drive_mode);
-            _ = self.drivetrain.motors.set_voltages(power);
+            // let power = differential_drive(&mappings.drive_mode);
+            // _ = self.drivetrain.model.apply_power(power);
+            _ = self
+            .drivetrain
+            .model
+            .drive_arcade(state.left_stick.y(), state.left_stick.x());
 
             // neaten with refactor
             if mappings.hoard.is_pressed() {
                 _ = self.intake.0.set_voltage(-Motor::V5_MAX_VOLTAGE);
                 _ = self.intake.1.set_voltage(-Motor::V5_MAX_VOLTAGE);
                 _ = self.intake.2.set_voltage(Motor::V5_MAX_VOLTAGE);
-                // self.triple_state.0.set_high()?;
-                // self.triple_state.1.set_high()?;
-            } else if mappings.outtake.is_pressed() {
+                // _ = self.triple_state.0.set_high();
+                // _ = self.triple_state.1.set_high();
+                } else if mappings.outake.is_pressed() {
                 _ = self.intake.0.set_voltage(Motor::V5_MAX_VOLTAGE);
                 _ = self.intake.1.set_voltage(Motor::V5_MAX_VOLTAGE);
                 _ = self.intake.2.set_voltage(Motor::V5_MAX_VOLTAGE);
@@ -108,18 +123,18 @@ impl Compete for Robot {
                 _ = self.intake.0.set_voltage(-Motor::V5_MAX_VOLTAGE);
                 _ = self.intake.1.set_voltage(-Motor::V5_MAX_VOLTAGE);
                 _ = self.intake.2.set_voltage(-Motor::V5_MAX_VOLTAGE);
-                self.triple_state.0.set_low()?;
-                self.triple_state.1.set_low()?;
-            } else if mappings.long.is_pressed() {
+                _ = self.triple_state.0.set_low();
+                _ = self.triple_state.1.set_low();
+             } else if mappings.long.is_pressed() {
                 _ = self.intake.0.set_voltage(-Motor::V5_MAX_VOLTAGE);
                 _ = self.intake.1.set_voltage(-Motor::V5_MAX_VOLTAGE);
                 _ = self.intake.2.set_voltage(-Motor::V5_MAX_VOLTAGE);
-                self.triple_state.0.set_high()?;
-                self.triple_state.1.set_low()?;
+                _ = self.triple_state.0.set_high();
+                _ = self.triple_state.1.set_low();
             } else {
-                _ = self.intake.0.set_voltage(0);
-                _ = self.intake.1.set_voltage(0);
-                _ = self.intake.2.set_voltage(0);
+                _ = self.intake.0.set_voltage(0.0);
+                _ = self.intake.1.set_voltage(0.0);
+                _ = self.intake.2.set_voltage(0.0);
             }
 
 
@@ -131,7 +146,7 @@ impl Compete for Robot {
                 _ = self.wing.toggle();
             }
 
-            sleep_until(delay).await;
+            sleep(Controller::UPDATE_INTERVAL);
         }
     }
 }
@@ -139,19 +154,19 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     let mut imu = InertialSensor::new(peripherals.port_8);
 
-    match imu.calibrate().await {
-    }
-    let left_motors = [
+    imu.calibrate().await.ok();
+    
+    let left_motors = Rc::new(RefCell::new([
         Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
         Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
         Motor::new(peripherals.port_13, Gearset::Blue, Direction::Forward),
-    ];
+    ]));
     
-    let right_motors = [
+    let right_motors = Rc::new(RefCell::new([
         Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
         Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
         Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
-    ];
+    ]));
     let robot = Robot {
         drivetrain: Drivetrain::new(
             Differential::from_shared(left_motors.clone(), right_motors.clone()),
@@ -193,9 +208,9 @@ async fn main(peripherals: Peripherals) {
         wing: AdiDigitalOut::with_initial_level(peripherals.adi_d, LogicLevel::Low),
         triple_state: (
             AdiDigitalOut::with_initial_level(peripherals.adi_e, LogicLevel::Low),
-            AdiDigitalOut::with_initial_level(peripherals.adi_f, LogicLevel::Low5),
-            AdiDigitalOut::with_initial_level(peripherals.adi_g, LogicLevel::Low),
+            AdiDigitalOut::with_initial_level(peripherals.adi_f, LogicLevel::Low),
         ),
         controller: peripherals.primary_controller,
     };
+    robot.compete().await;
 }

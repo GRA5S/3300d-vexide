@@ -10,13 +10,12 @@ lto = "fat"
 # These fields configure default behavior for uploads with `cargo v5`.
 [package.metadata.v5]
 upload-strategy = "differential"
-slot = 1
+slot = 3
 icon = "cool-x"
 compress = true
 
 [dependencies]
 vexide = { version = "0.8.0", features = ["full", "default-sdk"] }
 evian = { git = "https://github.com/vexide/evian" }  # or just `evian` without version
-vexide-motorgroup = "2.2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
