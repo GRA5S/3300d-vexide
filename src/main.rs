@@ -29,23 +29,23 @@ pub const GEARING: f64 = 48.0/72.0;
 impl Robot {
     const LINEAR_PID: Pid = Pid::new(1.0, 0.0, 0.125, None);
     const LATERAL_PID: Pid = Pid::new(0.09, 0.001, 0.004, Some(2.0));   
-    const ANGULAR_PID: AngularPid = AngularPid::new(16.0, 0.0, 1.0, None);
+    const ANGULAR_PID: AngularPid = AngularPid::new(10.0, 0.0, 1.29, None);
     const LINEAR_TOLERANCES: Tolerances = Tolerances::new()
         .error(4.0)
         .velocity(0.25)
         .duration(Duration::from_millis(15));
     const ANGULAR_TOLERANCES: Tolerances = Tolerances::new()
-        .error(f64::to_radians(8.0))
+        .error(f64::to_radians(0.9))
         .velocity(0.09)
-        .duration(Duration::from_millis(15));
+        .duration(Duration::from_millis(150));
 }
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
         let dt = &mut self.drivetrain;
         let mut seeking = Seeking {
-            linear_controller: Pid::new(0.0, 0.0, 0.0, None),
-            lateral_controller: Pid::new(0.0, 0.0, 0.0, None),
+            linear_controller: Self::LINEAR_PID,
+            lateral_controller: Self::LATERAL_PID,
             tolerances: Self::LINEAR_TOLERANCES,
             timeout: Some(Duration::from_secs(10)),
         };
@@ -60,11 +60,16 @@ impl Compete for Robot {
         // Turn to 0 degrees heading.
         basic.turn_to_heading(dt, 0.0.deg()).await;
         basic.turn_to_heading(dt, 90.0.deg()).await;
-        basic.turn_to_heading(dt, 0.0.deg()).await;
+        // basic.turn_to_heading(dt, 0.0.deg()).await;
+        // basic.turn_to_heading(dt, 90.0.deg()).await;
+        // basic.turn_to_heading(dt, 0.0.deg()).await;
+        // basic.drive_distance(dt, 24.0).await;
+        // basic.turn_to_heading(dt, 180.0.deg()).await;
+        // basic.drive_distance(dt, 24.0).await;
         
         // // Move to point (24, 24) on the field.
-        seeking.move_to_point(dt, (24.0, 24.0)).await;
-
+        // seeking.move_to_point(dt, (24.0, 24.0)).await;
+        
 
     }
 
