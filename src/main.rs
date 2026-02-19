@@ -14,14 +14,10 @@ use evian::{
 };
 use vexide::prelude::*;
 use vexide::adi::digital::LogicLevel;
-// pros::Distance distance_left(9);
-// pros::Distance distance_right(1);
-// pros::Distance distance_front(9);
 
-// float left_distance_from_center = 0;
-// float right_distance_from_center = 0;
-// float front_distance_from_center = 0;
-// float dist_to_center = 0;
+// const LEFT_DISTANCE_FROM_CENTER: f64 = 0.0;
+// const RIGHT_DISTANCE_FROM_CENTER: f64 = 0.0;
+// const FRONT_DISTANCE_FROM_CENTER: f64 = 0.0;
 
 struct Robot {
     controller: Controller,
@@ -40,7 +36,7 @@ pub const WHEEL_DIAMETER: f64 = 3.25;
 pub const GEARING: f64 = 48.0/72.0;
 impl Robot {
     const LINEAR_PID: Pid = Pid::new(6.5, 0.0, 1.29, None);
-    const LATERAL_PID: Pid = Pid::new(0.09, 0.001, 0.004, Some(2.0));   
+    const LATERAL_PID: Pid = Pid::new(6.5, 0.0, 1.29, Some(2.0));   
     const ANGULAR_PID: AngularPid = AngularPid::new(6.5, 0.0, 0.59, None);
     const LINEAR_TOLERANCES: Tolerances = Tolerances::new()
         .error(4.0)
@@ -52,12 +48,33 @@ impl Robot {
         .duration(Duration::from_millis(150));
 }
 
+impl Robot {
+}
+
 impl Compete for Robot {
     async fn autonomous(&mut self) {
+        let mut score = || {
+            _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+            _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+            _ = self.hood.set_low();
+            _ = self.midgoal.set_low();
+        };
+        let hoard = || {
+            _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+            _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+            _ = self.hood.set_high();
+            _ = self.midgoal.set_low();
+        };
+        let stop = || {
+            _ = self.intake1.set_voltage(0.0);
+            _ = self.intake2.set_voltage(0.0);
+            _ = self.hood.set_high();
+            _ = self.midgoal.set_low();
+        };
         let dt = &mut self.drivetrain;
         let mut seeking = Seeking {
-            linear_controller: Pid::new(0.0, 0.0, 0.0, None),
-            lateral_controller: Pid::new(0.0, 0.0, 0.0, None),
+            linear_controller: Self::LINEAR_PID,
+            lateral_controller: Self::LATERAL_PID,
             tolerances: Self::LINEAR_TOLERANCES,
             timeout: Some(Duration::from_secs(10)),
         };
@@ -76,6 +93,32 @@ impl Compete for Robot {
         basic.drive_distance_at_heading(dt, 24.0, 90.0.deg()).await;
         basic.drive_distance_at_heading(dt, -12.0, 90.0.deg()).await;
         basic.drive_distance_at_heading(dt, -12.0, 90.0.deg()).await;
+
+
+        // // Path
+
+        // basic.drive_distance(dt, 24.448).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7).await;
+        // basic.turn_to_heading(dt, 238.011.deg()).await;
+        // hoard()
+        // basic.drive_distance(dt, 25.484).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7).await;
+        // basic.turn_to_heading(dt, 270.0deg()).await;
+        // stop()
+        // basic.drive_distance(dt, -30.833).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7).await;
+        // basic.turn_to_heading(dt, 50.817.deg()).await;
+        // basic.drive_distance(dt, -50.958).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7).await;
+        // basic.turn_to_heading(dt, 90.deg()).await;
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         
@@ -142,8 +185,8 @@ impl Compete for Robot {
                 _ = self.wing.toggle();
             }
 
-            let current = self.intake2.current().unwrap_or(0.0);
-            _ = self.controller.set_text(&format!("I2: {:.2}A", current), 2, 1).await;
+            // let current = self.intake2.current().unwrap_or(0.0);
+            // _ = self.controller.set_text(&format!("I2: {:.2}A", current), 2, 1).await;
 
             sleep(Motor::WRITE_INTERVAL).await;
         }
@@ -157,6 +200,10 @@ async fn main(peripherals: Peripherals) {
 
     let mut imu = InertialSensor::new(peripherals.port_17);
     imu.calibrate().await.unwrap();
+
+    // let distance_left = DistanceSensor::new(peripherals.port_9);
+    // let distance_right = DistanceSensor::new(peripherals.port_1);
+    // let distance_front = DistanceSensor::new(peripherals.port_8);
 
     let left_motors = shared_motors![
         Motor::new(peripherals.port_14, Gearset::Blue, Direction::Reverse),
@@ -175,7 +222,7 @@ async fn main(peripherals: Peripherals) {
             Differential::from_shared(left_motors.clone(), right_motors.clone()),
             WheeledTracking::forward_only(
                 (0.0, 0.0),
-                90.0.deg(),
+                270.0.deg(),
                 [
                     TrackingWheel::new(left_motors, WHEEL_DIAMETER, TRACK_WIDTH/2.0, Some(GEARING)),
                     TrackingWheel::new(right_motors, WHEEL_DIAMETER, TRACK_WIDTH/2.0, Some(GEARING)),
