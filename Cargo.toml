@@ -10,7 +10,7 @@ lto = "fat"
 # These fields configure default behavior for uploads with `cargo v5`.
 [package.metadata.v5]
 upload-strategy = "differential"
-slot = 3
+slot = 1
 icon = "cool-x"
 compress = true
 

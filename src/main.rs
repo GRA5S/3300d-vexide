@@ -1,6 +1,6 @@
 use std::time::{
     Duration,
-    // Instant
+    Instant,
 };
 use evian::{
     motion::{Basic, Seeking},
@@ -14,32 +14,42 @@ use evian::{
 };
 use vexide::prelude::*;
 use vexide::adi::digital::LogicLevel;
-use vexide_motorgroup::MotorGroup;
+// pros::Distance distance_left(9);
+// pros::Distance distance_right(1);
+// pros::Distance distance_front(9);
+
+// float left_distance_from_center = 0;
+// float right_distance_from_center = 0;
+// float front_distance_from_center = 0;
+// float dist_to_center = 0;
 
 struct Robot {
     controller: Controller,
     drivetrain: Drivetrain<Differential, WheeledTracking>,
-    intake: MotorGroup,
+    intake1: Motor,
+    intake2: Motor,
     wing: AdiDigitalOut,
     matchload: AdiDigitalOut,
     hood: AdiDigitalOut,
     midgoal: AdiDigitalOut,
+    intake2_overcurrent_disabled: bool,
+    intake2_overcurrent_time: Option<Instant>,
 }
 pub const TRACK_WIDTH: f64 = 10.0;
 pub const WHEEL_DIAMETER: f64 = 3.25;
 pub const GEARING: f64 = 48.0/72.0;
 impl Robot {
-    const LINEAR_PID: Pid = Pid::new(1.0, 0.0, 0.125, None);
+    const LINEAR_PID: Pid = Pid::new(6.5, 0.0, 1.29, None);
     const LATERAL_PID: Pid = Pid::new(0.09, 0.001, 0.004, Some(2.0));   
-    const ANGULAR_PID: AngularPid = AngularPid::new(16.0, 0.0, 1.0, None);
+    const ANGULAR_PID: AngularPid = AngularPid::new(6.5, 0.0, 0.59, None);
     const LINEAR_TOLERANCES: Tolerances = Tolerances::new()
         .error(4.0)
         .velocity(0.25)
         .duration(Duration::from_millis(15));
     const ANGULAR_TOLERANCES: Tolerances = Tolerances::new()
-        .error(f64::to_radians(8.0))
-        .velocity(0.09)
-        .duration(Duration::from_millis(15));
+        .error(f64::to_radians(4.0))
+        .velocity(4.0)
+        .duration(Duration::from_millis(150));
 }
 
 impl Compete for Robot {
@@ -58,16 +68,17 @@ impl Compete for Robot {
             angular_tolerances: Self::ANGULAR_TOLERANCES,
             timeout: Some(Duration::from_secs(10)),
         };
+        // _ = dt.model.drive_arcade(-3.0, 0.0);
+        // sleep(Duration::from_millis(500)).await;
+        // _ = dt.model.drive_arcade(0.0, 0.0);
+        // basic.turn_to_heading(dt, 0.0.deg()).await;
+        // basic.turn_to_heading(dt, 90.0.deg()).await;
+        basic.drive_distance_at_heading(dt, 24.0, 90.0.deg()).await;
+        basic.drive_distance_at_heading(dt, -12.0, 90.0.deg()).await;
+        basic.drive_distance_at_heading(dt, -12.0, 90.0.deg()).await;
 
-        // Turn to 0 degrees heading.
-        basic.turn_to_heading(dt, 0.0.deg()).await;
-        basic.turn_to_heading(dt, 90.0.deg()).await;
-        basic.turn_to_heading(dt, 0.0.deg()).await;
+
         
-        // // Move to point (24, 24) on the field.
-        seeking.move_to_point(dt, (24.0, 24.0)).await;
-
-
     }
 
     async fn driver(&mut self) {
@@ -81,22 +92,45 @@ impl Compete for Robot {
                 .drive_arcade(state.right_stick.y(), state.left_stick.x());
 
 
-            if state.button_r1.is_pressed() {
-                _ = self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
-            } else if state.button_l2.is_pressed() {
-                _ = self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
-                _ = self.hood.set_high();
-                _ = self.midgoal.set_high();
-            } else if state.button_l1.is_pressed() {
-                _ = self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
-                _ = self.hood.set_low();
-                _ = self.midgoal.set_high();
-             } else if state.button_r2.is_pressed() {
-                _ = self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
+            if state.button_l1.is_pressed() {
+                _ = self.intake1.set_voltage(-Motor::V5_MAX_VOLTAGE);
+                _ = self.intake2.set_voltage(-Motor::V5_MAX_VOLTAGE);
+            } else if state.button_r2.is_pressed() {
+                _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+                _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
                 _ = self.hood.set_low();
                 _ = self.midgoal.set_low();
+            } else if state.button_r1.is_now_pressed() {
+               self.intake2_overcurrent_disabled = false;
+               self.intake2_overcurrent_time = None;
+            } else if state.button_r1.is_pressed() {
+              let current = self.intake2.current().unwrap_or(0.0);
+              if current > 2.0 {
+                  if self.intake2_overcurrent_time.is_none() {
+                      self.intake2_overcurrent_time = Some(Instant::now());
+                  } else if let Some(start) = self.intake2_overcurrent_time {
+                      if start.elapsed() >= Duration::from_secs(1) {
+                          _ = self.intake2.set_voltage(0.0);
+                          self.intake2_overcurrent_disabled = true;
+                      }
+                  }
+              } else {
+                  self.intake2_overcurrent_time = None;
+                  if !self.intake2_overcurrent_disabled {
+                       _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+                       _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+                       _ = self.hood.set_high();
+                       _ = self.midgoal.set_low();
+                  }
+              }
+             } else if state.button_l2.is_pressed() {
+                _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+                _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+                _ = self.hood.set_high();
+                _ = self.midgoal.set_high();
             } else {
-                _ = self.intake.set_voltage(0.0);
+                _ = self.intake1.set_voltage(0.0);
+                _ = self.intake2.set_voltage(0.0);
             }
 
 
@@ -107,6 +141,9 @@ impl Compete for Robot {
             if state.button_up.is_now_pressed() {
                 _ = self.wing.toggle();
             }
+
+            let current = self.intake2.current().unwrap_or(0.0);
+            _ = self.controller.set_text(&format!("I2: {:.2}A", current), 2, 1).await;
 
             sleep(Motor::WRITE_INTERVAL).await;
         }
@@ -146,14 +183,14 @@ async fn main(peripherals: Peripherals) {
                 Some(imu),
             ),
         ),
-        intake: MotorGroup::new(vec![
-            Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-            Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
-        ]),
+        intake1: Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
+        intake2: Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
         matchload: AdiDigitalOut::with_initial_level(peripherals.adi_b, LogicLevel::Low),
         wing: AdiDigitalOut::with_initial_level(peripherals.adi_d, LogicLevel::Low),
-        hood: AdiDigitalOut::with_initial_level(peripherals.adi_e, LogicLevel::Low),
+        hood: AdiDigitalOut::with_initial_level(peripherals.adi_e, LogicLevel::High),
         midgoal: AdiDigitalOut::with_initial_level(peripherals.adi_f, LogicLevel::Low),
+        intake2_overcurrent_disabled: false,
+        intake2_overcurrent_time: None,
     };
 
     robot.compete().await;
