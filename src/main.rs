@@ -15,9 +15,9 @@ use evian::{
 use vexide::prelude::*;
 use vexide::adi::digital::LogicLevel;
 
-// const LEFT_DISTANCE_FROM_CENTER: f64 = 0.0;
-// const RIGHT_DISTANCE_FROM_CENTER: f64 = 0.0;
-// const FRONT_DISTANCE_FROM_CENTER: f64 = 0.0;
+const LEFT_DISTANCE_FROM_CENTER: f64 = 0.0;
+const RIGHT_DISTANCE_FROM_CENTER: f64 = 0.0;
+const FRONT_DISTANCE_FROM_CENTER: f64 = 0.0;
 
 struct Robot {
     controller: Controller,
@@ -53,24 +53,6 @@ impl Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
-        let mut score = || {
-            _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-            _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-            _ = self.hood.set_low();
-            _ = self.midgoal.set_low();
-        };
-        let hoard = || {
-            _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-            _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-            _ = self.hood.set_high();
-            _ = self.midgoal.set_low();
-        };
-        let stop = || {
-            _ = self.intake1.set_voltage(0.0);
-            _ = self.intake2.set_voltage(0.0);
-            _ = self.hood.set_high();
-            _ = self.midgoal.set_low();
-        };
         let dt = &mut self.drivetrain;
         let mut seeking = Seeking {
             linear_controller: Self::LINEAR_PID,
@@ -95,18 +77,25 @@ impl Compete for Robot {
         basic.drive_distance_at_heading(dt, -12.0, 90.0.deg()).await;
 
 
-        // // Path
+        dt.tracking.set_heading(270.0.deg());
+        // Path
 
-        // basic.drive_distance(dt, 24.448).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7).await;
-        // basic.turn_to_heading(dt, 238.011.deg()).await;
-        // hoard()
-        // basic.drive_distance(dt, 25.484).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7).await;
-        // basic.turn_to_heading(dt, 270.0deg()).await;
-        // stop()
-        // basic.drive_distance(dt, -30.833).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7).await;
-        // basic.turn_to_heading(dt, 50.817.deg()).await;
-        // basic.drive_distance(dt, -50.958).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7).await;
-        // basic.turn_to_heading(dt, 90.deg()).await;
+        basic.drive_distance(dt, 24.448 as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
+        basic.turn_to_heading(dt, (238.011 as f64).deg()).await;
+        basic.drive_distance(dt, 25.484 as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
+        basic.turn_to_heading(dt, (270.019 as f64).deg()).await;
+        basic.drive_distance(dt, -(30.833 as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
+        basic.turn_to_heading(dt, (50.826 as f64).deg()).await;
+        basic.drive_distance(dt, -(50.952 as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
+        basic.turn_to_heading(dt, (90.302 as f64).deg()).await;
+
+        // Path
+
+        basic.drive_distance(dt, 31.9 as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 1 as f64).await;
+        basic.turn_to_heading(dt, (90 as f64).deg()).await;
+        basic.drive_distance(dt, -(31.9 as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 1 as f64).await;
+        basic.turn_to_heading(dt, (90.302 as f64).deg()).await;
+
 
 
 
@@ -201,9 +190,9 @@ async fn main(peripherals: Peripherals) {
     let mut imu = InertialSensor::new(peripherals.port_17);
     imu.calibrate().await.unwrap();
 
-    // let distance_left = DistanceSensor::new(peripherals.port_9);
-    // let distance_right = DistanceSensor::new(peripherals.port_1);
-    // let distance_front = DistanceSensor::new(peripherals.port_8);
+    let distance_left = DistanceSensor::new(peripherals.port_9);
+    let distance_right = DistanceSensor::new(peripherals.port_1);
+    let distance_front = DistanceSensor::new(peripherals.port_8);
 
     let left_motors = shared_motors![
         Motor::new(peripherals.port_14, Gearset::Blue, Direction::Reverse),

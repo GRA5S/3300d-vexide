@@ -1,0 +1,20 @@
+// Path
+
+basic.drive_distance(dt, 24.448 as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
+basic.turn_to_heading(dt, (238.011 as f64).deg()).await;
+basic.drive_distance(dt, 25.484 as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
+basic.turn_to_heading(dt, (270.019 as f64).deg()).await;
+basic.drive_distance(dt, -(30.833 as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
+basic.turn_to_heading(dt, (50.826 as f64).deg()).await;
+basic.drive_distance(dt, -(50.952 as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
+basic.turn_to_heading(dt, (90.302 as f64).deg()).await;
+
+// Path
+
+basic.drive_distance(dt, 31.9 as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 1 as f64).await;
+basic.turn_to_heading(dt, (90 as f64).deg()).await;
+basic.drive_distance(dt, -(31.9 as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 1 as f64).await;
+basic.turn_to_heading(dt, (90.302 as f64).deg()).await;
+
+
+#PATH.JERRYIO-DATA {"appVersion":"0.10.0","format":"Rigid Code Gen v0.1","gc":{"robotWidth":12,"robotHeight":18,"showRobot":true,"uol":2.54,"pointDensity":0.7874015748031495,"controlMagnetDistance":1.968503937007874,"fieldImage":{"displayName":"V5RC 2026 - Push Back","signature":"V5RC-PushBack-H2H-TopDownHighlighted-TileColor66_71","origin":{"__type":"built-in"}},"coordinateSystem":"Path-Based Coordinates","headingOutputType":"Absolute Heading","outputTemplate":"path: `// ${name}\n\n${code}\n`\nforward: `basic.drive_distance(dt, ${distance} as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * ${speed} as f64).await;`\nbackward: `basic.drive_distance(dt, -(${distance} as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * ${speed} as f64).await;`\nturnLeft: `basic.turn_to_heading(dt, (${heading} as f64).deg()).await;`\nturnRight: `basic.turn_to_heading(dt, (${heading} as f64).deg()).await;`\nturnTo: `basic.turn_to_heading(dt, (${heading} as f64).deg()).await;`\n"},"paths":[{"segments":[{"controls":[{"uid":"NfRaz0EFF9","x":60.815,"y":-15.5,"lock":false,"visible":true,"heading":270,"__type":"end-point"},{"uid":"tAI2LqMEiW","x":36.367,"y":-15.499999999999998,"lock":false,"visible":true,"heading":238.01129942195402,"__type":"end-point"}],"speedProfiles":[],"lookaheadKeyframes":[],"uid":"eEcmLVgzJv"},{"controls":[{"uid":"tAI2LqMEiW","x":36.367,"y":-15.499999999999998,"lock":false,"visible":true,"heading":238.01129942195402,"__type":"end-point"},{"uid":"o3AJ4kvWiJ","x":14.753,"y":-29,"lock":false,"visible":true,"heading":270.0185826152188,"__type":"end-point"}],"speedProfiles":[],"lookaheadKeyframes":[],"uid":"p4pyfKGRHY"},{"controls":[{"uid":"o3AJ4kvWiJ","x":14.753,"y":-29,"lock":false,"visible":true,"heading":270.0185826152188,"__type":"end-point"},{"uid":"hewirRp9Va","x":45.586,"y":-29.01,"lock":false,"visible":true,"heading":50.82550631720528,"__type":"end-point"}],"speedProfiles":[],"lookaheadKeyframes":[],"uid":"8iKWrOKKct"},{"controls":[{"uid":"hewirRp9Va","x":45.586,"y":-29.01,"lock":false,"visible":true,"heading":50.82550631720528,"__type":"end-point"},{"uid":"8onoOlU52S","x":6.086706468839195,"y":-61.19556819804452,"lock":false,"visible":true,"heading":90.302,"__type":"end-point"}],"speedProfiles":[],"lookaheadKeyframes":[],"uid":"bwhUB3GE9d"}],"pc":{"speed":0.7},"name":"Path","uid":"X0MPXb3jWm","lock":false,"visible":true},{"segments":[{"controls":[{"uid":"tA8VeivAc9","x":32.498,"y":-47.015,"lock":false,"visible":true,"heading":90.00023781705436,"__type":"end-point"},{"uid":"q9gcAvNXsa","x":64.39799346996956,"y":-47.01513240700354,"lock":false,"visible":true,"heading":90.00023781705431,"__type":"end-point"}],"speedProfiles":[],"lookaheadKeyframes":[],"uid":"1Zt4ZvZg5h"},{"controls":[{"uid":"q9gcAvNXsa","x":64.39799346996956,"y":-47.01513240700354,"lock":false,"visible":true,"heading":90.00023781705431,"__type":"end-point"},{"uid":"RHBqocLijB","x":32.498,"y":-47.015,"lock":false,"visible":true,"heading":90.3015539498683,"__type":"end-point"}],"speedProfiles":[],"lookaheadKeyframes":[],"uid":"89ymXpA36L"}],"pc":{"speed":1},"name":"Path","uid":"ePG5hs9EEa","lock":false,"visible":true}]}

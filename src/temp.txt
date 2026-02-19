@@ -2,8 +2,11 @@ path: `// ${name}
 
 ${code}
 `
-forward: `basic.drive_distance(dt, ${distance}).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * ${speed}).await;`
-backward: `basic.drive_distance(dt, -${distance}).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * ${speed}).await;`
-turnLeft: `basic.turn_to_heading(dt, ${heading}.deg()).await;`
-turnRight: `basic.turn_to_heading(dt, ${heading}.deg()).await;`
-turnTo: `basic.turn_to_heading(dt, ${heading}.deg()).await;`
+forward: `basic.drive_distance(dt, ${distance} as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * ${speed} as f64).await;`
+backward: `basic.drive_distance(dt, -(${distance} as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * ${speed} as f64).await;`
+turnLeft: `basic.turn_to_heading(dt, (${heading} as f64).deg()).await;`
+turnRight: `basic.turn_to_heading(dt, (${heading} as f64).deg()).await;`
+turnTo: `basic.turn_to_heading(dt, (${heading} as f64).deg()).await;`
+
+
+
