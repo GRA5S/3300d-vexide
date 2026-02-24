@@ -15,8 +15,8 @@ use evian::{
 use vexide::prelude::*;
 use vexide::adi::digital::LogicLevel;
 
-const LEFT_DISTANCE_FROM_CENTER: f64 = 0.0;
-const RIGHT_DISTANCE_FROM_CENTER: f64 = 0.0;
+const LEFT_DISTANCE_FROM_CENTER: f64 = 5.163;
+const RIGHT_DISTANCE_FROM_CENTER: f64 = 5.163;
 const FRONT_DISTANCE_FROM_CENTER: f64 = 0.0;
 
 struct Robot {
@@ -30,6 +30,9 @@ struct Robot {
     midgoal: AdiDigitalOut,
     intake2_overcurrent_disabled: bool,
     intake2_overcurrent_time: Option<Instant>,
+    front_sensor: DistanceSensor,
+    left_sensor: DistanceSensor,
+    right_sensor: DistanceSensor,
 }
 pub const TRACK_WIDTH: f64 = 10.0;
 pub const WHEEL_DIAMETER: f64 = 3.25;
@@ -46,9 +49,115 @@ impl Robot {
         .error(f64::to_radians(4.0))
         .velocity(4.0)
         .duration(Duration::from_millis(150));
-}
 
-impl Robot {
+    fn weighted_distance(&self, sensor_index: u8) -> Option<f64> {
+        let mut distances = [0.0; 5];
+        let mut confidences = [0.0; 5];
+        let mut total_confidence = 0.0;
+
+        for i in 0..5 {
+            match sensor_index {
+                1 => {
+                    if let Ok(obj) = self.left_sensor.object() {
+                        if let Some(obj) = obj {
+                            distances[i] = obj.distance as f64 * 0.0394; // mm to inches
+                            confidences[i] = obj.confidence as f64 / 63.0;
+                        }
+                    }
+                }
+                2 => {
+                    if let Ok(obj) = self.right_sensor.object() {
+                        if let Some(obj) = obj {
+                            distances[i] = obj.distance as f64 * 0.0394; // mm to inches
+                            confidences[i] = obj.confidence as f64 / 63.0;
+                        }
+                    }
+                }
+                3 => {
+                    if let Ok(obj) = self.front_sensor.object() {
+                        if let Some(obj) = obj {
+                            distances[i] = obj.distance as f64 * 0.0394; // mm to inches
+                            confidences[i] = obj.confidence as f64 / 63.0;
+                        }
+                    }
+                }
+                _ => return None,
+            }
+            total_confidence += confidences[i];
+        }
+
+        if total_confidence == 0.0 {
+            return None;
+        }
+
+        let mut weighted_distance = 0.0;
+        for i in 0..5 {
+            let weighted_confidence = confidences[i] / total_confidence;
+            weighted_distance += distances[i] * weighted_confidence;
+        }
+
+        Some(weighted_distance)
+    }
+
+    fn simple_dist_reset(&mut self) {
+        let pose = self.drivetrain.tracking.position();
+
+        if pose.x > 0.0 && pose.y > 0.0 {
+            if let Ok(obj) = self.left_sensor.object() {
+                if let Some(obj) = obj {
+                    let dist_to_center = obj.distance as f64 * 0.0394 + LEFT_DISTANCE_FROM_CENTER;
+                    self.drivetrain.tracking.set_position((pose.x, 72.0 - dist_to_center));
+                }
+            }
+        } else if pose.x < 0.0 && pose.y > 0.0 {
+            if let Ok(obj) = self.right_sensor.object() {
+                if let Some(obj) = obj {
+                    let dist_to_center = obj.distance as f64 * 0.0394 + RIGHT_DISTANCE_FROM_CENTER;
+                    self.drivetrain.tracking.set_position((pose.x, 72.0 - dist_to_center));
+                }
+            }
+        } else if pose.x < 0.0 && pose.y < 0.0 {
+            if let Ok(obj) = self.left_sensor.object() {
+                if let Some(obj) = obj {
+                    let dist_to_center = obj.distance as f64 * 0.0394 + LEFT_DISTANCE_FROM_CENTER;
+                    self.drivetrain.tracking.set_position((pose.x, -72.0 + dist_to_center));
+                }
+            }
+        } else if pose.x > 0.0 && pose.y < 0.0 {
+            if let Ok(obj) = self.right_sensor.object() {
+                if let Some(obj) = obj {
+                    let dist_to_center = obj.distance as f64 * 0.0394 + RIGHT_DISTANCE_FROM_CENTER;
+                    self.drivetrain.tracking.set_position((pose.x, -72.0 + dist_to_center));
+                }
+            }
+        }
+    }
+
+    fn weighted_dist_reset(&mut self) {
+        let pose = self.drivetrain.tracking.position();
+
+        if pose.x > 0.0 && pose.y > 0.0 {
+            if let Some(weighted_dist) = self.weighted_distance(1) {
+                let dist_to_center = weighted_dist + LEFT_DISTANCE_FROM_CENTER;
+                self.drivetrain.tracking.set_position((pose.x, 72.0 - dist_to_center));
+            }
+        } else if pose.x < 0.0 && pose.y > 0.0 {
+            if let Some(weighted_dist) = self.weighted_distance(2) {
+                let dist_to_center = weighted_dist + RIGHT_DISTANCE_FROM_CENTER;
+                self.drivetrain.tracking.set_position((pose.x, 72.0 - dist_to_center));
+            }
+        } else if pose.x < 0.0 && pose.y < 0.0 {
+            if let Some(weighted_dist) = self.weighted_distance(1) {
+                let dist_to_center = weighted_dist + LEFT_DISTANCE_FROM_CENTER;
+                self.drivetrain.tracking.set_position((pose.x, -72.0 + dist_to_center));
+            }
+        } else if pose.x > 0.0 && pose.y < 0.0 {
+            if let Some(weighted_dist) = self.weighted_distance(2) {
+                let dist_to_center = weighted_dist + RIGHT_DISTANCE_FROM_CENTER;
+                self.drivetrain.tracking.set_position((pose.x, -72.0 + dist_to_center));
+            }
+        }
+    }
 }
 
 impl Compete for Robot {
@@ -60,249 +169,13 @@ impl Compete for Robot {
             tolerances: Self::LINEAR_TOLERANCES,
             timeout: Some(Duration::from_secs(10)),
         };
-        let mut basic = Basic {
+        let basic = Basic {
             linear_controller: Self::LINEAR_PID,
             angular_controller: Self::ANGULAR_PID,
             linear_tolerances: Self::LINEAR_TOLERANCES,
             angular_tolerances: Self::ANGULAR_TOLERANCES,
             timeout: Some(Duration::from_secs(10)),
         };
-        // _ = dt.model.drive_arcade(-3.0, 0.0);
-        // sleep(Duration::from_millis(500)).await;
-        // _ = dt.model.drive_arcade(0.0, 0.0);
-        // basic.turn_to_heading(dt, 0.0.deg()).await;
-        // basic.turn_to_heading(dt, 90.0.deg()).await;
-        // basic.drive_distance_at_heading(dt, 24.0, 90.0.deg()).await;
-        // basic.drive_distance_at_heading(dt, -12.0, 90.0.deg()).await;
-        // basic.drive_distance_at_heading(dt, -12.0, 90.0.deg()).await;
-
-
-        // dt.tracking.set_heading(270.0.deg());
-        // // Path
-
-        // basic.drive_distance(dt, 24.448 as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
-        // basic.turn_to_heading(dt, (234.686 as f64).deg()).await;
-        // basic.drive_distance(dt, 31.883 as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
-        // basic.turn_to_heading(dt, (270 as f64).deg()).await;
-        // basic.drive_distance(dt, -(49.916 as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
-        // basic.turn_to_heading(dt, (67.824 as f64).deg()).await;
-        // basic.drive_distance(dt, -(60.847 as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 0.7 as f64).await;
-        // basic.turn_to_heading(dt, (64.272 as f64).deg()).await;
-
-        // // Path
-
-        // basic.drive_distance(dt, 31.9 as f64).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 1 as f64).await;
-        // basic.turn_to_heading(dt, (90 as f64).deg()).await;
-        // basic.drive_distance(dt, -(31.9 as f64)).with_linear_output_limit(Motor::V5_MAX_VOLTAGE * 1 as f64).await;
-        // basic.turn_to_heading(dt, (90.302 as f64).deg()).await;
-// // Evian PID
-// // Starting point: (59.37 in, -14.91 in)
-// // Point 2
-// dt.tracking.set_heading(270.00.deg());
-// // Point 2
-// basic
-//     .drive_distance(dt, 22.23)
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(1.0)
-//     .await;
-// _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-// _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-// _ = self.hood.set_high();
-// _ = self.midgoal.set_low();
-// // Point 3
-// basic
-//     .turn_to_heading(dt, 250.35.deg())
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(1.0)
-//     .await;
-// basic
-//     .drive_distance(dt, 30.05)
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(0.33)
-//     .await;
-// _ = self.intake1.set_voltage(0.0);
-// _ = self.intake2.set_voltage(0.0);
-// // Point 4
-// basic
-//     .turn_to_heading(dt, 118.81.deg())
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(1.0)
-//     .await;
-// basic
-//     .drive_distance(dt, 46.13)
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(1.0)
-//     .await;
-// // Point 5
-// basic
-//     .turn_to_heading(dt, 90.00.deg())
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(1.0)
-//     .await;
-// basic
-//     .drive_distance(dt, -66.69)
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(1.0)
-//     .await;
-// _ = self.matchload.toggle();
-// _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-// _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-// _ = self.hood.set_low();
-// _ = self.midgoal.set_low();
-// // Point 6
-// basic
-//     .turn_to_heading(dt, 90.00.deg())
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(1.0)
-//     .await;
-// basic
-//     .drive_distance(dt, 46.48)
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(1.0)
-//     .await;
-// _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-// _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-// _ = self.hood.set_high();
-// _ = self.midgoal.set_low();
-// // Point 7
-// basic
-//     .turn_to_heading(dt, 270.00.deg())
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(1.0)
-//     .await;
-// basic
-//     .drive_distance(dt, 46.48)
-//     .with_timeout(Duration::from_millis(2000))
-//     .with_linear_output_limit(1.0)
-//     .await;
-// _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-// _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-// _ = self.hood.set_low();
-// _ = self.midgoal.set_low();
-// Evian PID
-// Starting point: (59.37 in, -14.91 in)
-// Point 2
-dt.tracking.set_heading(269.37.deg());
-// Point 2
-basic
-    .drive_distance(dt, 22.99)
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(0.99)
-    .await;
-_ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-_ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-_ = self.hood.set_high();
-_ = self.midgoal.set_low();
-// Point 3
-basic
-    .turn_to_heading(dt, 239.97.deg())
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(1.0)
-    .await;
-basic
-    .drive_distance(dt, 31.81/2.0)
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(0.33)
-    .await;
-_ = self.matchload.toggle();
-basic
-    .drive_distance(dt, 31.81/2.0)
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(0.33)
-    .await;
-_ = self.matchload.toggle();
-
-_ = self.intake1.set_voltage(0.0);
-_ = self.intake2.set_voltage(0.0);
-// Point 4
-basic
-    .turn_to_heading(dt, 98.97.deg())
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(1.0)
-    .await;
-basic
-    .drive_distance(dt, 38.88)
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(1.0)
-    .await;
-// Point 5
-basic
-    .turn_to_heading(dt, 180.00.deg())
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(1.0)
-    .await;
-basic
-    .drive_distance(dt, 10.11)
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(1.0)
-    .await;
-// Point 6
-basic
-    .turn_to_heading(dt, 90.00.deg())
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(1.0)
-    .await;
-basic
-    .drive_distance(dt, -50.53)
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(1.0)
-    .await;
-_ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-_ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-_ = self.hood.set_low();
-_ = self.midgoal.set_low();
-sleep(Duration::from_millis(4000)).await;
-
-
-
-
-// Evian PID
-// Starting point: (9.85 in, -45.47 in)
-// Point 2
-dt.tracking.set_heading(91.19.deg());
-// Point 2
-_ = self.matchload.set_high();
-basic
-    .drive_distance(dt, 89.77)
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(0.67)
-    .await;
-_ = self.hood.set_high();
-_ = self.midgoal.set_low();
-_ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-_ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-
-sleep(Duration::from_millis(4000)).await;
-basic
-    .turn_to_heading(dt, 89.84.deg())
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(1.0)
-    .await;     
-basic
-    .drive_distance(dt, -91.96)
-    .with_timeout(Duration::from_millis(2000))
-    .with_linear_output_limit(1.0)
-    .await;
-_ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-_ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-_ = self.hood.set_low();
-_ = self.midgoal.set_low();
-sleep(Duration::from_millis(4000)).await;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         
     }
 
@@ -388,10 +261,6 @@ async fn main(peripherals: Peripherals) {
     let mut imu = InertialSensor::new(peripherals.port_17);
     imu.calibrate().await.unwrap();
 
-    let distance_left = DistanceSensor::new(peripherals.port_9);
-    let distance_right = DistanceSensor::new(peripherals.port_1);
-    let distance_front = DistanceSensor::new(peripherals.port_8);
-
     let left_motors = shared_motors![
         Motor::new(peripherals.port_14, Gearset::Blue, Direction::Reverse),
         Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
@@ -425,6 +294,9 @@ async fn main(peripherals: Peripherals) {
         midgoal: AdiDigitalOut::with_initial_level(peripherals.adi_f, LogicLevel::Low),
         intake2_overcurrent_disabled: false,
         intake2_overcurrent_time: None,
+        front_sensor: DistanceSensor::new(peripherals.port_1),
+        left_sensor: DistanceSensor::new(peripherals.port_2),
+        right_sensor: DistanceSensor::new(peripherals.port_3),
     };
 
     robot.compete().await;
