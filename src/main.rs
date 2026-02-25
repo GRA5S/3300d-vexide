@@ -50,6 +50,79 @@ impl Robot {
         .velocity(4.0)
         .duration(Duration::from_millis(150));
 
+    async fn driveto(
+        &mut self,
+        target_x: f64,
+        target_y: f64,
+        timeout: u64,
+        speed: f64,
+        basic: &mut Basic<Pid, AngularPid>,
+    ) {
+        let dt = &mut self.drivetrain;
+        let pos = dt.tracking.position();
+        let current_x = pos.x;
+        let current_y = pos.y;
+
+        let dx = target_x - current_x;
+        let dy = target_y - current_y;
+        let distance = (dx * dx + dy * dy).sqrt();
+        let angle = dy.atan2(dx).to_degrees();
+
+        basic
+            .turn_to_heading(dt, angle.deg())
+            .with_timeout(Duration::from_millis(timeout))
+            .await;
+        basic
+            .drive_distance(dt, distance)
+            .with_timeout(Duration::from_millis(timeout))
+            .with_linear_output_limit(speed)
+            .await;
+    }
+
+    async fn reversedriveto(
+        &mut self,
+        target_x: f64,
+        target_y: f64,
+        timeout: u64,
+        speed: f64,
+        basic: &mut Basic<Pid, AngularPid>,
+    ) {
+        let dt = &mut self.drivetrain;
+        let pos = dt.tracking.position();
+        let current_x = pos.x;
+        let current_y = pos.y;
+
+        let dx = target_x - current_x;
+        let dy = target_y - current_y;
+        let distance = (dx * dx + dy * dy).sqrt();
+        let angle = dy.atan2(dx).to_degrees();
+
+        basic
+            .turn_to_heading(dt, (angle + 180.0).deg())
+            .with_timeout(Duration::from_millis(timeout))
+            .await;
+        basic
+            .drive_distance(dt, -distance)
+            .with_timeout(Duration::from_millis(timeout))
+            .with_linear_output_limit(speed)
+            .await;
+    }
+
+    async fn turnto(
+        &mut self,
+        heading: f64,
+        timeout: u64,
+        speed: f64,
+        basic: &mut Basic<Pid, AngularPid>,
+    ) {
+        let dt = &mut self.drivetrain;
+        basic
+            .turn_to_heading(dt, heading.deg())
+            .with_timeout(Duration::from_millis(timeout))
+            .with_linear_output_limit(speed)
+            .await;
+    }
+
     fn weighted_distance(&self, sensor_index: u8) -> Option<f64> {
         let mut distances = [0.0; 5];
         let mut confidences = [0.0; 5];
@@ -163,20 +236,32 @@ impl Robot {
 impl Compete for Robot {
     async fn autonomous(&mut self) {
         let dt = &mut self.drivetrain;
-        let mut seeking = Seeking {
-            linear_controller: Self::LINEAR_PID,
-            lateral_controller: Self::LATERAL_PID,
-            tolerances: Self::LINEAR_TOLERANCES,
-            timeout: Some(Duration::from_secs(10)),
-        };
-        let basic = Basic {
+         let mut basic = Basic {
             linear_controller: Self::LINEAR_PID,
             angular_controller: Self::ANGULAR_PID,
             linear_tolerances: Self::LINEAR_TOLERANCES,
             angular_tolerances: Self::ANGULAR_TOLERANCES,
             timeout: Some(Duration::from_secs(10)),
         };
-        
+        // evian fucking seeking shit
+        self.drivetrain.tracking.set_position((60.53, -14.96));
+        // Starting point: (60.53 in, -14.96 in)
+        self.driveto(60.53, -14.96, 2000, 1.0, &mut basic).await;
+        _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+        _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+        _ = self.hood.set_high();
+        _ = self.midgoal.set_low(); //hoard
+        self.driveto(29.84, -14.96, 2000, 1.0, &mut basic).await;
+        self.driveto(11.24, -31.23, 2000, 0.2, &mut basic).await;
+        self.driveto(54.95, -32.16, 2000, 1.0, &mut basic).await;
+        self.reversedriveto(44.25, -46.58, 2000, 1.0, &mut basic).await;
+        self.reversedriveto(17.75, -46.58, 2000, 1.0, &mut basic).await;
+        _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+        _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+        _ = self.hood.set_low();
+        _ = self.midgoal.set_low(); //score
+        sleep(Duration::from_millis(2000)).await;
+
     }
 
     async fn driver(&mut self) {
