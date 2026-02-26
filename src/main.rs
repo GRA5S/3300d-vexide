@@ -39,7 +39,7 @@ pub const WHEEL_DIAMETER: f64 = 3.25;
 pub const GEARING: f64 = 48.0/72.0;
 impl Robot {
     const LINEAR_PID: Pid = Pid::new(7.1, 0.0, 0.6, None);
-    const LATERAL_PID: Pid = Pid::new(6.5, 0.0, 1.29, Some(2.0));   
+    const LATERAL_PID: Pid = Pid::new(0.02, 0.07, 0.1, None);   
     const ANGULAR_PID: AngularPid = AngularPid::new(6.5, 0.0, 0.59, None);
     const LINEAR_TOLERANCES: Tolerances = Tolerances::new()
         .error(9.0)
@@ -236,31 +236,63 @@ impl Robot {
 impl Compete for Robot {
     async fn autonomous(&mut self) {
         let dt = &mut self.drivetrain;
-         let mut basic = Basic {
+        let mut seeking = Seeking {
+            linear_controller: Self::LINEAR_PID,
+            lateral_controller: Self::LATERAL_PID,
+            tolerances: Self::LINEAR_TOLERANCES,
+            timeout: Some(Duration::from_secs(10)),
+        };
+        let mut basic = Basic {
             linear_controller: Self::LINEAR_PID,
             angular_controller: Self::ANGULAR_PID,
             linear_tolerances: Self::LINEAR_TOLERANCES,
             angular_tolerances: Self::ANGULAR_TOLERANCES,
             timeout: Some(Duration::from_secs(10)),
         };
-        // evian fucking seeking shit
-        self.drivetrain.tracking.set_position((60.53, -14.96));
-        // Starting point: (60.53 in, -14.96 in)
-        self.driveto(60.53, -14.96, 2000, 1.0, &mut basic).await;
-        _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-        _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-        _ = self.hood.set_high();
-        _ = self.midgoal.set_low(); //hoard
-        self.driveto(29.84, -14.96, 2000, 1.0, &mut basic).await;
-        self.driveto(11.24, -31.23, 2000, 0.2, &mut basic).await;
-        self.driveto(54.95, -32.16, 2000, 1.0, &mut basic).await;
-        self.reversedriveto(44.25, -46.58, 2000, 1.0, &mut basic).await;
-        self.reversedriveto(17.75, -46.58, 2000, 1.0, &mut basic).await;
-        _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-        _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-        _ = self.hood.set_low();
-        _ = self.midgoal.set_low(); //score
-        sleep(Duration::from_millis(2000)).await;
+        // evian seeking shit
+        dt.tracking.set_position((59.87, -15.16));
+        // Starting point: (59.87 in, -15.16 in)
+        // seeking
+        //     .move_to_point(dt, (59.87, -15.16))
+        //     .with_timeout(Duration::from_millis(2000))
+        //     .with_linear_output_limit(1.0)
+        //     .await;
+        // _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+        // _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+        // _ = self.hood.set_high();
+        // _ = self.midgoal.set_low(); //hoard
+        seeking
+        .move_to_point(dt, (30.32, -15.16))
+        .with_timeout(Duration::from_millis(10000))
+        .with_linear_output_limit(1.0)
+        .await;
+        // seeking
+        // .move_to_point(dt, (12.88, -31.83))
+        // .with_timeout(Duration::from_millis(2000))
+        // .with_linear_output_limit(0.1)
+        // .await;
+        // seeking
+        // .move_to_point(dt, (46.23, -31.83))
+        // .with_timeout(Duration::from_millis(2000))
+        // .with_linear_output_limit(1.0)
+        // .reverse()
+        // .await;
+        // seeking
+        // .move_to_point(dt, (44.72, -46.23))
+        // .with_timeout(Duration::from_millis(2000))
+        // .with_linear_output_limit(1.0)
+        // .await;
+        // seeking
+        // .move_to_point(dt, (6.82, -46.23))
+        // .with_timeout(Duration::from_millis(2000))
+        // .with_linear_output_limit(1.0)
+        // .reverse()
+        // .await;
+        // _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+        // _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+        // _ = self.hood.set_low();
+        // _ = self.midgoal.set_low(); //score
+        // sleep(Duration::from_millis(8000)).await;
 
     }
 
@@ -363,7 +395,7 @@ async fn main(peripherals: Peripherals) {
             Differential::from_shared(left_motors.clone(), right_motors.clone()),
             WheeledTracking::forward_only(
                 (0.0, 0.0),
-                90.0.deg(),
+                0.0.deg(),
                 [
                     TrackingWheel::new(left_motors, WHEEL_DIAMETER, TRACK_WIDTH/2.0, Some(GEARING)),
                     TrackingWheel::new(right_motors, WHEEL_DIAMETER, TRACK_WIDTH/2.0, Some(GEARING)),
