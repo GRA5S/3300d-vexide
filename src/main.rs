@@ -39,7 +39,8 @@ pub const WHEEL_DIAMETER: f64 = 3.25;
 pub const GEARING: f64 = 48.0/72.0;
 impl Robot {
     const LINEAR_PID: Pid = Pid::new(7.1, 0.0, 0.6, None);
-    const LATERAL_PID: Pid = Pid::new(0.02, 0.07, 0.1, None);   
+    // const LINEAR_PID: Pid = Pid::new(0.0, 0.0, 0.0, None);
+    const LATERAL_PID: Pid = Pid::new(0.09, 0.01, 0.01, None);     
     const ANGULAR_PID: AngularPid = AngularPid::new(6.5, 0.0, 0.59, None);
     const LINEAR_TOLERANCES: Tolerances = Tolerances::new()
         .error(9.0)
@@ -249,50 +250,153 @@ impl Compete for Robot {
             angular_tolerances: Self::ANGULAR_TOLERANCES,
             timeout: Some(Duration::from_secs(10)),
         };
-        // evian seeking shit
-        dt.tracking.set_position((59.87, -15.16));
-        // Starting point: (59.87 in, -15.16 in)
-        // seeking
-        //     .move_to_point(dt, (59.87, -15.16))
-        //     .with_timeout(Duration::from_millis(2000))
-        //     .with_linear_output_limit(1.0)
-        //     .await;
-        // _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-        // _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-        // _ = self.hood.set_high();
-        // _ = self.midgoal.set_low(); //hoard
-        seeking
-        .move_to_point(dt, (30.32, -15.16))
-        .with_timeout(Duration::from_millis(10000))
-        .with_linear_output_limit(1.0)
-        .await;
-        // seeking
-        // .move_to_point(dt, (12.88, -31.83))
-        // .with_timeout(Duration::from_millis(2000))
-        // .with_linear_output_limit(0.1)
-        // .await;
-        // seeking
-        // .move_to_point(dt, (46.23, -31.83))
-        // .with_timeout(Duration::from_millis(2000))
-        // .with_linear_output_limit(1.0)
-        // .reverse()
-        // .await;
-        // seeking
-        // .move_to_point(dt, (44.72, -46.23))
-        // .with_timeout(Duration::from_millis(2000))
-        // .with_linear_output_limit(1.0)
-        // .await;
-        // seeking
-        // .move_to_point(dt, (6.82, -46.23))
-        // .with_timeout(Duration::from_millis(2000))
-        // .with_linear_output_limit(1.0)
-        // .reverse()
-        // .await;
-        // _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
-        // _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
-        // _ = self.hood.set_low();
-        // _ = self.midgoal.set_low(); //score
-        // sleep(Duration::from_millis(8000)).await;
+// evian seeking shit
+dt.tracking.set_position((60.53, -14.96));
+dt.tracking.set_heading(180.0.deg());
+
+// Starting point: (60.53 in, -14.96 in)
+_ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+_ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+_ = self.hood.set_high();
+_ = self.midgoal.set_low(); //hoard
+// seeking
+//   .move_to_point(dt, (60.53, -14.96))
+//   .with_timeout(Duration::from_millis(2000))
+//   .with_linear_output_limit(1.0)
+//   .await;
+
+// seeking
+//   .move_to_point(dt, (13.64, -23.49))
+//   .with_timeout(Duration::from_millis(2000))
+//   .with_linear_output_limit(0.6)
+//   .await;
+// seeking
+//   .move_to_point(dt, (53.05, -45.47))
+//   .with_timeout(Duration::from_millis(2000))
+//   .with_linear_output_limit(1.0)
+//   .await;
+// _ = self.matchload.set_low();
+
+// basic
+//     .turn_to_heading(dt, 0.0.deg()).await;
+// basic
+//     .drive_distance(dt, -45.12)
+//     .with_timeout(Duration::from_millis(2000))
+//     .with_linear_output_limit(1.0)
+//     .await;
+// _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+// _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+// _ = self.hood.set_low();
+// _ = self.midgoal.set_low(); //score
+// _ = self.matchload.set_high();
+// sleep(Duration::from_millis(1000)).await;
+// _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+// _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+// _ = self.hood.set_high();
+// _ = self.midgoal.set_low(); //hoard
+// basic
+//     .drive_distance(dt, 45.12)
+//     .with_timeout(Duration::from_millis(2000))
+//     .with_linear_output_limit(0.7)
+//     .await;
+// basic
+//     .drive_distance(dt, -1.0)
+//     .with_timeout(Duration::from_millis(2000))
+//     .with_linear_output_limit(1)
+//     .await;
+// basic
+//     .drive_distance(dt, 1.0)
+//     .with_timeout(Duration::from_millis(2000))
+//     .with_linear_output_limit(1)
+//     .await;
+// basic
+//     .drive_distance(dt, -45.12)
+//     .with_timeout(Duration::from_millis(2000))
+//     .with_linear_output_limit(0.7)
+//     .await;
+// _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+// _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+// _ = self.hood.set_low();
+// _ = self.midgoal.set_low(); //score
+// sleep(Duration::from_millis(5000)).await;
+
+
+
+
+
+seeking
+  .move_to_point(dt, (60.53, -14.96))
+  .with_timeout(Duration::from_millis(2000))
+  .with_linear_output_limit(1.0)
+  .await;
+
+seeking
+  .move_to_point(dt, (40.93, -25.01))
+  .with_timeout(Duration::from_millis(2000))
+  .with_linear_output_limit(1.0)
+  .await;
+seeking
+  .move_to_point(dt, (49.05, -39.07))
+  .with_timeout(Duration::from_millis(2000))
+  .with_linear_output_limit(1.0)
+  .await;
+// _ = self.matchload.set_low();
+
+basic
+    .turn_to_heading(dt, 0.0.deg()).await;
+// basic
+//     .drive_distance(dt, -45.12)
+//     .with_timeout(Duration::from_millis(2000))
+//     .with_linear_output_limit(1.0)
+//     .await;
+// _ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+// _ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+// _ = self.hood.set_low();
+// _ = self.midgoal.set_low(); //score
+// _ = self.matchload.set_high();
+// sleep(Duration::from_millis(1000)).await;
+_ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+_ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+_ = self.hood.set_high();
+_ = self.midgoal.set_low(); //hoard
+// basic
+//     .drive_distance(dt, -5.12)
+//     .with_timeout(Duration::from_millis(2000))
+//     .with_linear_output_limit(0.7)
+//     .await;
+_ = self.matchload.set_high(); 
+sleep(Duration::from_millis(200)).await;
+
+
+basic
+    .drive_distance(dt, 45.12)
+    .with_timeout(Duration::from_millis(2000))
+    .with_linear_output_limit(1.0)
+    .await;
+basic
+    .drive_distance(dt, -1.0)
+    .with_timeout(Duration::from_millis(2000))
+    .with_linear_output_limit(1.0)
+    .await;
+basic
+    .drive_distance(dt, 1.0)
+    .with_timeout(Duration::from_millis(2000))
+    .with_linear_output_limit(1.0)
+    .await;
+// basic.turn_to_heading(dt, 5.0.deg()).await;
+
+basic
+    .drive_distance(dt, -45.12)
+    .with_timeout(Duration::from_millis(2000))
+    .with_linear_output_limit(0.7)
+    .await;
+_ = self.intake1.set_voltage(Motor::V5_MAX_VOLTAGE);
+_ = self.intake2.set_voltage(Motor::V5_MAX_VOLTAGE);
+_ = self.hood.set_low();
+_ = self.midgoal.set_low(); //score
+sleep(Duration::from_millis(5000)).await;
+
+
 
     }
 
@@ -395,7 +499,7 @@ async fn main(peripherals: Peripherals) {
             Differential::from_shared(left_motors.clone(), right_motors.clone()),
             WheeledTracking::forward_only(
                 (0.0, 0.0),
-                0.0.deg(),
+                90.0.deg(),
                 [
                     TrackingWheel::new(left_motors, WHEEL_DIAMETER, TRACK_WIDTH/2.0, Some(GEARING)),
                     TrackingWheel::new(right_motors, WHEEL_DIAMETER, TRACK_WIDTH/2.0, Some(GEARING)),
