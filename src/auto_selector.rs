@@ -16,12 +16,12 @@ pub async fn select_auto(display: &mut Display, _controller: &Controller) -> u8 
 
         // Draw current selection - hardcode the names since c! won't work with variables
         let selection_text = match selected {
-            1 => c"l4bcombo m",
-            2 => c"dist sensor test",
-            3 => c"r7bpid",
-            4 => c"l7bpid",
+            1 => c"",
+            2 => c"l4blockwing",
+            3 => c"r7block",
+            4 => c"l7block",
             5 => c"shittysawp",
-            6 => c"testr7bseek",
+            6 => c"skills",
             7 => c"",
             8 => c"",
             _ => c"Unknown",
